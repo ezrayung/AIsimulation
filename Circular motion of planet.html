@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>SKH Tang Shiu Kin Secondary School</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      text-align: center;
+      background: #f4f4f4;
+      margin: 0;
+      padding: 20px;
+    }
+    h1 { margin-bottom: 10px; }
+    .controls {
+      display: inline-block;
+      text-align: left;
+      margin-bottom: 15px;
+    }
+    .control { margin: 5px 0; }
+    label {
+      display: inline-block;
+      width: 150px;
+      text-align: right;
+      margin-right: 8px;
+    }
+    input[type="range"], select {
+      width: 200px;
+      vertical-align: middle;
+    }
+    button {
+      margin: 0 5px;
+      padding: 4px 8px;
+      font-size: 0.9em;
+    }
+    #canvas {
+      background: #fff;
+      border: 1px solid #ccc;
+      display: block;
+      margin: 10px auto;
+    }
+  </style>
+</head>
+<body>
+  <h1>SKH Tang Shiu Kin Secondary School</h1>
+
+  <div class="controls">
+    <div class="control">
+      <label for="mass1">Central mass (M):</label>
+      <input id="mass1" type="range" min="1000" max="50000" step="500" value="10000">
+      <span id="mass1Val">10000</span>
+    </div>
+    <div class="control">
+      <label for="mass2">Orbiting mass (m):</label>
+      <input id="mass2" type="range" min="100" max="5000" step="100" value="500">
+      <span id="mass2Val">500</span>
+    </div>
+    <div class="control">
+      <label for="vel0">Initial speed (v₀):</label>
+      <input id="vel0" type="range" min="0" max="10" step="0.1" value="2.5">
+      <span id="vel0Val">2.5</span>
+    </div>
+    <div class="control">
+      <label for="speed">Sim speed:</label>
+      <input id="speed" type="range" min="0.1" max="5" step="0.1" value="1">
+      <span id="speedVal">1.0</span>
+    </div>
+    <div class="control">
+      <label for="trailStyle">Trail style:</label>
+      <select id="trailStyle">
+        <option value="solid">Solid</option>
+        <option value="fading">Fading</option>
+        <option value="none">None</option>
+      </select>
+    </div>
+    <div class="control">
+      <button id="togglePause">⏸ Pause</button>
+      <button id="clearTrail">🗑 Clear Trail</button>
+    </div>
+  </div>
+
+  <canvas id="canvas" width="600" height="600"></canvas>
+
+  <script>
+    // ——— SETUP ———
+    const G = 1;
+    const canvas = document.getElementById('canvas');
+    const ctx    = canvas.getContext('2d');
+    const cx = canvas.width / 2;
+    const cy = canvas.height / 2;
+    const r0 = 200;
+    const baseDt = 0.1;
+
+    // UI elements
+    const sMass1 = document.getElementById('mass1');
+    const sMass2 = document.getElementById('mass2');
+    const sVel0  = document.getElementById('vel0');
+    const sSpeed = document.getElementById('speed');
+    const sTrail = document.getElementById('trailStyle');
+    const bPause = document.getElementById('togglePause');
+    const bClear = document.getElementById('clearTrail');
+    const dMass1 = document.getElementById('mass1Val');
+    const dMass2 = document.getElementById('mass2Val');
+    const dVel0  = document.getElementById('vel0Val');
+    const dSpeed = document.getElementById('speedVal');
+
+    // state
+    let M, m, v0;
+    let pos, vel;
+    let path = [];
+    let paused = false;
+    let speed = 1;
+    let trailStyle = 'solid';
+    let isDragging = false;
+
+    // ——— RESET SIM ———
+    function reset() {
+      M  = +sMass1.value;
+      m  = +sMass2.value;
+      v0 = +sVel0.value;
+      dMass1.textContent = M;
+      dMass2.textContent = m;
+      dVel0.textContent  = v0.toFixed(1);
+      pos = { x: cx + r0, y: cy };
+      vel = { x: 0,        y: v0 };
+      path = [];
+    }
+
+    // ——— DRAW TRAIL ———
+    function drawTrail() {
+      if (trailStyle === 'none' || path.length < 2) return;
+      if (trailStyle === 'solid') {
+        ctx.beginPath();
+        ctx.moveTo(path[0].x, path[0].y);
+        for (let p of path) ctx.lineTo(p.x, p.y);
+        ctx.strokeStyle = 'rgba(66,133,244,0.6)';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+      } else {
+        for (let i = 1; i < path.length; i++) {
+          const alpha = i / path.length;
+          ctx.beginPath();
+          ctx.moveTo(path[i-1].x, path[i-1].y);
+          ctx.lineTo(path[i].x,   path[i].y);
+          ctx.strokeStyle = `rgba(66,133,244,${alpha})`;
+          ctx.lineWidth = 1.2;
+          ctx.stroke();
+        }
+      }
+    }
+
+    // ——— ANIMATION ———
+    function step() {
+      if (!paused && !isDragging) {
+        const dx = pos.x - cx, dy = pos.y - cy;
+        const dist = Math.hypot(dx, dy);
+        const F = G * M * m / (dist*dist);
+        const ax = -F/m * (dx/dist);
+        const ay = -F/m * (dy/dist);
+        const dt = baseDt * speed;
+
+        vel.x += ax * dt;
+        vel.y += ay * dt;
+        pos.x += vel.x * dt;
+        pos.y += vel.y * dt;
+
+        path.push({ x: pos.x, y: pos.y });
+        if (path.length > 2000) path.shift();
+      }
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      drawTrail();
+
+      // central body
+      ctx.beginPath();
+      ctx.arc(cx, cy, 20, 0, Math.PI*2);
+      ctx.fillStyle = '#f4b400';
+      ctx.fill();
+
+      // orbiting planet
+      ctx.beginPath();
+      ctx.arc(pos.x, pos.y, 10, 0, Math.PI*2);
+      ctx.fillStyle = '#4285f4';
+      ctx.fill();
+
+      requestAnimationFrame(step);
+    }
+
+    // ——— EVENTS ———
+    [sMass1, sMass2, sVel0].forEach(sl => sl.addEventListener('input', reset));
+    sSpeed.addEventListener('input', () => {
+      speed = +sSpeed.value;
+      dSpeed.textContent = speed.toFixed(1);
+    });
+    sTrail.addEventListener('change', () => trailStyle = sTrail.value);
+    bPause.addEventListener('click', () => {
+      paused = !paused;
+      bPause.textContent = paused ? '▶ Resume' : '⏸ Pause';
+    });
+    bClear.addEventListener('click', () => path = []);
+    canvas.addEventListener('mousedown', e => {
+      const rect = canvas.getBoundingClientRect();
+      const mx = e.clientX - rect.left, my = e.clientY - rect.top;
+      if (Math.hypot(mx - pos.x, my - pos.y) < 12) {
+        isDragging = true;
+        paused = true;
+      }
+    });
+    canvas.addEventListener('mousemove', e => {
+      if (!isDragging) return;
+      const rect = canvas.getBoundingClientRect();
+      pos.x = e.clientX - rect.left;
+      pos.y = e.clientY - rect.top;
+    });
+    window.addEventListener('mouseup', () => {
+      if (isDragging) {
+        isDragging = false;
+        paused = false;
+        vel.x = 0; vel.y = 0;
+      }
+    });
+
+    // ——— START ———
+    reset();
+    requestAnimationFrame(step);
+  </script>
+</body>
+</html>

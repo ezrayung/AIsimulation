@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Sentence Architect</title>
+    <style>
+        :root {
+            --bg-color: #f3f4f6;
+            --slot-bg: #e5e7eb;
+            --text-color: #1f2937;
+            --success: #10b981;
+            --error: #ef4444;
+        }
+
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+
+        h1 { margin-bottom: 5px; color: #374151; }
+        .subtitle { color: #6b7280; margin-bottom: 30px; }
+
+        /* Game Board */
+        .game-board {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 900px;
+        }
+
+        .level-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #f3f4f6;
+            padding-bottom: 15px;
+        }
+
+        .blueprint-display {
+            background-color: #ebf5ff;
+            border: 2px dashed #3b82f6;
+            color: #1d4ed8;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            font-weight: bold;
+            text-align: center;
+        }
+
+        /* Construction Zone (Drop Targets) */
+        .construction-zone {
+            display: flex;
+            gap: 10px;
+            min-height: 80px;
+            padding: 20px;
+            background-color: #f9fafb;
+            border-radius: 8px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 30px;
+            border: 2px solid #d1d5db;
+        }
+
+        /* The Blocks */
+        .block-pool {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+            padding: 20px;
+            background-color: #fff;
+            border-top: 1px solid #eee;
+        }
+
+        .word-block {
+            padding: 12px 20px;
+            border-radius: 6px;
+            cursor: grab;
+            font-weight: 600;
+            color: white;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transition: transform 0.2s, box-shadow 0.2s;
+            user-select: none;
+        }
+
+        .word-block:active { cursor: grabbing; transform: scale(0.95); }
+        .word-block.dragging { opacity: 0.5; }
+
+        /* Color Coding */
+        .type-subject { background-color: #3b82f6; } /* Blue */
+        .type-verb { background-color: #ef4444; } /* Red */
+        .type-object { background-color: #8b5cf6; } /* Purple */
+        .type-conjunction { background-color: #f59e0b; } /* Orange */
+        .type-sub-conj { background-color: #10b981; } /* Green */
+        .type-punctuation { background-color: #6b7280; border-radius: 50%; width: 20px; height: 20px; display:flex; align-items:center; justify-content:center; padding: 10px;}
+
+        /* Drop Slots */
+        .slot {
+            width: 120px;
+            height: 50px;
+            border: 2px dashed #ccc;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: var(--slot-bg);
+            font-size: 0.8em;
+            color: #9ca3af;
+        }
+        
+        .slot.punctuation-slot { width: 50px; border-radius: 50%; }
+
+        /* Feedback */
+        .feedback {
+            text-align: center;
+            font-size: 1.2em;
+            font-weight: bold;
+            height: 30px;
+            margin-top: 20px;
+        }
+
+        button {
+            margin-top: 20px;
+            padding: 12px 24px;
+            background-color: #111827;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 1em;
+            cursor: pointer;
+            display: block;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        button:hover { opacity: 0.9; }
+        button:disabled { background-color: #ccc; cursor: not-allowed; }
+
+    </style>
+</head>
+<body>
+
+    <h1>The Sentence Architect</h1>
+    <p class="subtitle">Drag blocks to build sentences according to the blueprint.</p>
+
+    <div class="game-board">
+        <div class="level-info">
+            <span id="level-display">Level 1: Simple Sentence</span>
+            <span id="score-display">Score: 0</span>
+        </div>
+
+        <div class="blueprint-display" id="blueprint-text">
+            Blueprint: SUBJECT + VERB + OBJECT
+        </div>
+
+        <div class="construction-zone" id="drop-zone">
+            </div>
+
+        <div class="block-pool" id="pool">
+            </div>
+
+        <div class="feedback" id="feedback-msg"></div>
+
+        <button onclick="checkAnswer()" id="check-btn">Check Blueprint</button>
+        <button onclick="nextLevel()" id="next-btn" style="display:none; background-color: #10b981;">Next Level >></button>
+    </div>
+
+    <script>
+        const levels = [
+            {
+                name: "Simple Sentence",
+                blueprint: ["subject", "verb", "object"],
+                desc: "Build a basic sentence: Subject + Verb + Object.",
+                blocks: [
+                    { text: "The Dog", type: "subject" },
+                    { text: "chased", type: "verb" },
+                    { text: "the ball", type: "object" },
+                    { text: "quickly", type: "adverb" }, // Distractor
+                    { text: "and", type: "conjunction" } // Distractor
+                ]
+            },
+            {
+                name: "Compound Sentence",
+                blueprint: ["subject", "verb", "object", "conjunction", "subject", "verb"],
+                desc: "Combine two independent clauses using a FANBOYS conjunction (For, And, Nor, But, Or, Yet, So).",
+                blocks: [
+                    { text: "I", type: "subject" },
+                    { text: "wanted", type: "verb" },
+                    { text: "pizza", type: "object" },
+                    { text: "but", type: "conjunction" },
+                    { text: "she", type: "subject" },
+                    { text: "cooked", type: "verb" },
+                    { text: "salad", type: "object" }, // Extra
+                    { text: "although", type: "sub-conj" } // Distractor (Complex)
+                ]
+            },
+            {
+                name: "Complex Sentence (Dependent First)",
+                blueprint: ["sub-conj", "subject", "verb", "punctuation", "subject", "verb", "object"],
+                desc: "Start with a Subordinating Conjunction (Because, If, When). Don't forget the comma!",
+                blocks: [
+                    { text: "Because", type: "sub-conj" },
+                    { text: "it", type: "subject" },
+                    { text: "rained", type: "verb" },
+                    { text: ",", type: "punctuation" },
+                    { text: "we", type: "subject" },
+                    { text: "canceled", type: "verb" },
+                    { text: "the picnic", type: "object" },
+                    { text: "so", type: "conjunction" }, // Distractor
+                    { text: "loudly", type: "adverb" } // Distractor
+                ]
+            },
+            {
+                name: "Complex Sentence (Independent First)",
+                blueprint: ["subject", "verb", "object", "sub-conj", "subject", "verb"],
+                desc: "Put the Independent clause first. Notice: No comma is needed here!",
+                blocks: [
+                    { text: "The student", type: "subject" },
+                    { text: "passed", type: "verb" },
+                    { text: "the test", type: "object" },
+                    { text: "because", type: "sub-conj" },
+                    { text: "she", type: "subject" },
+                    { text: "studied", type: "verb" },
+                    { text: ",", type: "punctuation" }, // Distractor!
+                    { text: "but", type: "conjunction" } // Distractor
+                ]
+            }
+        ];
+
+        let currentLevelIdx = 0;
+        let score = 0;
+
+        function initLevel() {
+            const level = levels[currentLevelIdx];
+            document.getElementById('level-display').innerText = `Level ${currentLevelIdx + 1}: ${level.name}`;
+            document.getElementById('blueprint-text').innerText = `BLUEPRINT: ${level.desc}`;
+            document.getElementById('feedback-msg').innerText = "";
+            document.getElementById('next-btn').style.display = "none";
+            document.getElementById('check-btn').style.display = "block";
+            
+            // Setup Slots
+            const zone = document.getElementById('drop-zone');
+            zone.innerHTML = "";
+            level.blueprint.forEach(type => {
+                const slot = document.createElement('div');
+                slot.className = type === 'punctuation' ? 'slot punctuation-slot' : 'slot';
+                slot.setAttribute('data-expect', type);
+                slot.innerText = type.toUpperCase();
+                
+                // Drop Events
+                slot.addEventListener('dragover', e => e.preventDefault());
+                slot.addEventListener('drop', handleDrop);
+                
+                zone.appendChild(slot);
+            });
+
+            // Setup Blocks
+            const pool = document.getElementById('pool');
+            pool.innerHTML = "";
+            
+            // Shuffle blocks
+            const shuffled = level.blocks.sort(() => Math.random() - 0.5);
+
+            shuffled.forEach(blockData => {
+                const block = document.createElement('div');
+                block.className = `word-block type-${blockData.type}`;
+                block.setAttribute('draggable', 'true');
+                block.setAttribute('data-type', blockData.type);
+                block.innerText = blockData.text;
+
+                block.addEventListener('dragstart', handleDragStart);
+                block.addEventListener('dragend', handleDragEnd);
+
+                pool.appendChild(block);
+            });
+        }
+
+        // Drag & Drop Logic
+        let draggedItem = null;
+
+        function handleDragStart(e) {
+            draggedItem = this;
+            setTimeout(() => this.classList.add('dragging'), 0);
+        }
+
+        function handleDragEnd() {
+            this.classList.remove('dragging');
+            draggedItem = null;
+        }
+
+        function handleDrop(e) {
+            e.preventDefault();
+            if (this.children.length === 0) { // Only allow one item per slot
+                this.innerHTML = ""; // Clear the text label
+                this.appendChild(draggedItem);
+                this.style.border = "2px solid #3b82f6";
+            }
+        }
+
+        // Return block to pool if dropped outside
+        document.getElementById('pool').addEventListener('dragover', e => e.preventDefault());
+        document.getElementById('pool').addEventListener('drop', function(e) {
+            e.preventDefault();
+            if(draggedItem) {
+                this.appendChild(draggedItem);
+                // Reset slots visual
+                document.querySelectorAll('.slot').forEach(s => {
+                    if(s.children.length === 0) {
+                        s.innerText = s.getAttribute('data-expect').toUpperCase();
+                        s.style.border = "2px dashed #ccc";
+                    }
+                });
+            }
+        });
+
+
+        function checkAnswer() {
+            const level = levels[currentLevelIdx];
+            const slots = document.querySelectorAll('.slot');
+            let correct = true;
+
+            slots.forEach((slot, index) => {
+                if (slot.children.length === 0) {
+                    correct = false; // Empty slot
+                    slot.style.borderColor = "red";
+                } else {
+                    const block = slot.children[0];
+                    const blockType = block.getAttribute('data-type');
+                    const expectedType = slot.getAttribute('data-expect');
+
+                    if (blockType !== expectedType) {
+                        correct = false;
+                        slot.style.borderColor = "red";
+                    } else {
+                        slot.style.borderColor = "#10b981"; // Green border
+                    }
+                }
+            });
+
+            const msg = document.getElementById('feedback-msg');
+            if (correct) {
+                msg.innerText = "Correct! Structure matches the blueprint.";
+                msg.style.color = "#10b981";
+                document.getElementById('check-btn').style.display = "none";
+                
+                if(currentLevelIdx < levels.length - 1) {
+                    document.getElementById('next-btn').style.display = "block";
+                } else {
+                    msg.innerText = "Congratulations! You are a Master Sentence Architect.";
+                }
+            } else {
+                msg.innerText = "Incorrect structure. Check the red boxes.";
+                msg.style.color = "#ef4444";
+            }
+        }
+
+        function nextLevel() {
+            currentLevelIdx++;
+            initLevel();
+        }
+
+        // Start
+        initLevel();
+
+    </script>
+</body>
+</html>

@@ -3,375 +3,546 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Sentence Architect</title>
+    <title>HK DSE Physics: Motion Graphs (TSK Final)</title>
     <style>
         :root {
-            --bg-color: #f3f4f6;
-            --slot-bg: #e5e7eb;
-            --text-color: #1f2937;
-            --success: #10b981;
-            --error: #ef4444;
+            --primary: #2c3e50;
+            --accent: #2980b9;
+            --success: #27ae60;
+            --danger: #c0392b;
+            --bg: #eef2f3;
         }
-
         body {
-            font-family: 'Segoe UI', sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-color);
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg);
+            margin: 0;
+            padding: 20px;
             display: flex;
             flex-direction: column;
             align-items: center;
-            min-height: 100vh;
-            margin: 0;
-            padding: 20px;
-        }
-
-        h1 { margin-bottom: 5px; color: #374151; }
-        .subtitle { color: #6b7280; margin-bottom: 30px; }
-
-        /* Game Board */
-        .game-board {
-            background: white;
-            padding: 30px;
-            border-radius: 12px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-            width: 100%;
-            max-width: 900px;
-        }
-
-        .level-info {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-            border-bottom: 2px solid #f3f4f6;
-            padding-bottom: 15px;
-        }
-
-        .blueprint-display {
-            background-color: #ebf5ff;
-            border: 2px dashed #3b82f6;
-            color: #1d4ed8;
-            padding: 15px;
-            border-radius: 8px;
-            margin-bottom: 30px;
-            font-weight: bold;
-            text-align: center;
-        }
-
-        /* Construction Zone (Drop Targets) */
-        .construction-zone {
-            display: flex;
-            gap: 10px;
-            min-height: 80px;
-            padding: 20px;
-            background-color: #f9fafb;
-            border-radius: 8px;
-            justify-content: center;
-            flex-wrap: wrap;
-            margin-bottom: 30px;
-            border: 2px solid #d1d5db;
-        }
-
-        /* The Blocks */
-        .block-pool {
-            display: flex;
-            gap: 10px;
-            justify-content: center;
-            flex-wrap: wrap;
-            padding: 20px;
-            background-color: #fff;
-            border-top: 1px solid #eee;
-        }
-
-        .word-block {
-            padding: 12px 20px;
-            border-radius: 6px;
-            cursor: grab;
-            font-weight: 600;
-            color: white;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            transition: transform 0.2s, box-shadow 0.2s;
             user-select: none;
         }
 
-        .word-block:active { cursor: grabbing; transform: scale(0.95); }
-        .word-block.dragging { opacity: 0.5; }
-
-        /* Color Coding */
-        .type-subject { background-color: #3b82f6; } /* Blue */
-        .type-verb { background-color: #ef4444; } /* Red */
-        .type-object { background-color: #8b5cf6; } /* Purple */
-        .type-conjunction { background-color: #f59e0b; } /* Orange */
-        .type-sub-conj { background-color: #10b981; } /* Green */
-        .type-punctuation { background-color: #6b7280; border-radius: 50%; width: 20px; height: 20px; display:flex; align-items:center; justify-content:center; padding: 10px;}
-
-        /* Drop Slots */
-        .slot {
-            width: 120px;
-            height: 50px;
-            border: 2px dashed #ccc;
-            border-radius: 6px;
+        /* CONTROL PANEL */
+        .panel {
+            background: white;
+            padding: 10px 20px;
+            border-radius: 50px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            margin-bottom: 20px;
             display: flex;
+            gap: 10px;
             align-items: center;
+            flex-wrap: wrap;
             justify-content: center;
-            background-color: var(--slot-bg);
-            font-size: 0.8em;
-            color: #9ca3af;
+        }
+        .btn {
+            padding: 8px 20px;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s;
+            background: #dfe6e9;
+            color: #636e72;
+        }
+        .btn.active { background: var(--accent); color: white; }
+        .btn-action { background: var(--success); color: white; }
+        .btn-action:hover { background: #219150; }
+
+        /* SIMULATION STAGE */
+        #stage {
+            width: 800px;
+            height: 250px;
+            border-radius: 8px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+            position: relative;
+            overflow: hidden;
+            border: 4px solid #34495e;
+            background: linear-gradient(to bottom, #87CEEB 0%, #E0F7FA 60%, #fff 60%);
+            margin-bottom: 20px;
+        }
+
+        /* SCENERY */
+        .scenery { position: absolute; bottom: 70px; width: 100%; pointer-events: none; }
+        .school-building {
+            position: absolute; right: 60px; bottom: 0;
+            width: 200px; height: 130px;
+            background: #ecf0f1; border: 2px solid #95a5a6;
+            display: flex; flex-direction: column; align-items: center; z-index: 1;
+        }
+        .school-roof {
+            position: absolute; top: -20px; left: -10px;
+            width: 220px; height: 20px; background: #e74c3c; border-radius: 4px;
+        }
+        .school-sign {
+            background: #34495e; color: #f1c40f; padding: 4px 8px;
+            font-weight: bold; margin-top: 15px; font-size: 13px;
+            border-radius: 2px; text-align: center; white-space: nowrap;
+        }
+        .windows { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-top: 20px; }
+        .win { width: 30px; height: 20px; background: #3498db; border: 2px solid #2980b9; }
+        .tree { position: absolute; bottom: 0; z-index: 2; }
+        .tree-trunk { width: 14px; height: 40px; background: #8d6e63; margin: 0 auto; }
+        .tree-leaves {
+            width: 60px; height: 60px; background: #27ae60;
+            border-radius: 50%; margin-bottom: -15px; position: relative; left: -23px;
+        }
+
+        /* ROAD & CAR */
+        .road {
+            position: absolute; bottom: 0; width: 100%; height: 70px;
+            background: #555; border-top: 6px solid #f1c40f; z-index: 3;
+        }
+        .marker {
+            position: absolute; bottom: 70px; font-size: 12px; font-weight: bold;
+            color: #2c3e50; border-left: 2px solid #2c3e50; height: 10px; padding-left: 4px; z-index: 4;
+        }
+        #car-container {
+            position: absolute; bottom: 25px; width: 100px; height: 50px;
+            transform-origin: center bottom; z-index: 10;
+        }
+
+        /* TEXT UI */
+        #instruction {
+            font-size: 1.4rem; font-weight: bold; text-align: center;
+            margin-bottom: 10px; color: var(--primary); min-height: 1.5em;
+        }
+
+        /* CHOICES GRID */
+        .choices-grid {
+            display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; width: 840px;
+            transition: all 0.3s;
+        }
+        /* A-T Layout (3 Columns) */
+        .choices-grid.three-col {
+            grid-template-columns: repeat(3, 1fr); width: 630px;
+        }
+
+        .choice-card {
+            background: white; border: 2px solid #bdc3c7; border-radius: 8px;
+            height: 220px; cursor: pointer; display: flex; flex-direction: column;
+            overflow: hidden; transition: transform 0.2s, border-color 0.2s;
+            position: relative; 
+        }
+        .choice-card:hover { border-color: var(--accent); transform: translateY(-3px); }
+        .canvas-area {
+            flex-grow: 1; position: relative; border-bottom: 1px solid #eee; background: #fff;
+        }
+        canvas { width: 100%; height: 100%; display: block; }
+        .card-footer {
+            height: 40px; display: flex; align-items: center; justify-content: center;
+            font-size: 1.1rem; font-weight: bold; background: #f9f9f9; color: #7f8c8d;
         }
         
-        .slot.punctuation-slot { width: 50px; border-radius: 50%; }
-
-        /* Feedback */
-        .feedback {
-            text-align: center;
-            font-size: 1.2em;
-            font-weight: bold;
-            height: 30px;
-            margin-top: 20px;
+        /* OVERLAY ICONS */
+        .overlay-icon {
+            position: absolute;
+            top: 50%; left: 50%; transform: translate(-50%, -60%);
+            font-size: 5rem; opacity: 0;
+            pointer-events: none; transition: opacity 0.3s, transform 0.3s;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.2); z-index: 20;
         }
+        
+        .hidden { display: none !important; }
 
-        button {
-            margin-top: 20px;
-            padding: 12px 24px;
-            background-color: #111827;
-            color: white;
-            border: none;
-            border-radius: 6px;
-            font-size: 1em;
-            cursor: pointer;
-            display: block;
-            margin-left: auto;
-            margin-right: auto;
-        }
-        button:hover { opacity: 0.9; }
-        button:disabled { background-color: #ccc; cursor: not-allowed; }
-
+        /* FEEDBACK COLORS */
+        .choice-card.correct { border-color: var(--success); }
+        .choice-card.correct .card-footer { background: var(--success); color: white; }
+        .choice-card.correct .overlay-icon { opacity: 1; color: var(--success); content: "✓"; transform: translate(-50%, -60%) scale(1.2); }
+        
+        .choice-card.wrong { border-color: var(--danger); opacity: 0.7; }
+        .choice-card.wrong .card-footer { background: var(--danger); color: white; }
+        .choice-card.wrong .overlay-icon { opacity: 1; color: var(--danger); content: "✗"; }
     </style>
 </head>
 <body>
 
-    <h1>The Sentence Architect</h1>
-    <p class="subtitle">Drag blocks to build sentences according to the blueprint.</p>
-
-    <div class="game-board">
-        <div class="level-info">
-            <span id="level-display">Level 1: Simple Sentence</span>
-            <span id="score-display">Score: 0</span>
-        </div>
-
-        <div class="blueprint-display" id="blueprint-text">
-            Blueprint: SUBJECT + VERB + OBJECT
-        </div>
-
-        <div class="construction-zone" id="drop-zone">
-            </div>
-
-        <div class="block-pool" id="pool">
-            </div>
-
-        <div class="feedback" id="feedback-msg"></div>
-
-        <button onclick="checkAnswer()" id="check-btn">Check Blueprint</button>
-        <button onclick="nextLevel()" id="next-btn" style="display:none; background-color: #10b981;">Next Level >></button>
+    <div class="panel">
+        <span style="color:#7f8c8d; font-size:0.9em; margin-right:10px;">MODE:</span>
+        <button class="btn active" onclick="setMode('mix', this)">Mix</button>
+        <button class="btn" onclick="setMode('s-t', this)">Only s-t</button>
+        <button class="btn" onclick="setMode('v-t', this)">Only v-t</button>
+        <button class="btn" onclick="setMode('a-t', this)">Only a-t</button>
+        <div style="width: 20px;"></div>
+        <button class="btn btn-action" onclick="initScenario()">▶ New Question</button>
+        <button class="btn" onclick="replayMotion()">↺ Replay</button>
     </div>
 
-    <script>
-        const levels = [
-            {
-                name: "Simple Sentence",
-                blueprint: ["subject", "verb", "object"],
-                desc: "Build a basic sentence: Subject + Verb + Object.",
-                blocks: [
-                    { text: "The Dog", type: "subject" },
-                    { text: "chased", type: "verb" },
-                    { text: "the ball", type: "object" },
-                    { text: "quickly", type: "adverb" }, // Distractor
-                    { text: "and", type: "conjunction" } // Distractor
-                ]
-            },
-            {
-                name: "Compound Sentence",
-                blueprint: ["subject", "verb", "object", "conjunction", "subject", "verb"],
-                desc: "Combine two independent clauses using a FANBOYS conjunction (For, And, Nor, But, Or, Yet, So).",
-                blocks: [
-                    { text: "I", type: "subject" },
-                    { text: "wanted", type: "verb" },
-                    { text: "pizza", type: "object" },
-                    { text: "but", type: "conjunction" },
-                    { text: "she", type: "subject" },
-                    { text: "cooked", type: "verb" },
-                    { text: "salad", type: "object" }, // Extra
-                    { text: "although", type: "sub-conj" } // Distractor (Complex)
-                ]
-            },
-            {
-                name: "Complex Sentence (Dependent First)",
-                blueprint: ["sub-conj", "subject", "verb", "punctuation", "subject", "verb", "object"],
-                desc: "Start with a Subordinating Conjunction (Because, If, When). Don't forget the comma!",
-                blocks: [
-                    { text: "Because", type: "sub-conj" },
-                    { text: "it", type: "subject" },
-                    { text: "rained", type: "verb" },
-                    { text: ",", type: "punctuation" },
-                    { text: "we", type: "subject" },
-                    { text: "canceled", type: "verb" },
-                    { text: "the picnic", type: "object" },
-                    { text: "so", type: "conjunction" }, // Distractor
-                    { text: "loudly", type: "adverb" } // Distractor
-                ]
-            },
-            {
-                name: "Complex Sentence (Independent First)",
-                blueprint: ["subject", "verb", "object", "sub-conj", "subject", "verb"],
-                desc: "Put the Independent clause first. Notice: No comma is needed here!",
-                blocks: [
-                    { text: "The student", type: "subject" },
-                    { text: "passed", type: "verb" },
-                    { text: "the test", type: "object" },
-                    { text: "because", type: "sub-conj" },
-                    { text: "she", type: "subject" },
-                    { text: "studied", type: "verb" },
-                    { text: ",", type: "punctuation" }, // Distractor!
-                    { text: "but", type: "conjunction" } // Distractor
-                ]
-            }
-        ];
+    <div id="instruction">Loading...</div>
 
-        let currentLevelIdx = 0;
-        let score = 0;
+    <div id="stage">
+        <div class="scenery">
+            <div class="tree" style="left: 80px;"><div class="tree-leaves"></div><div class="tree-trunk"></div></div>
+            <div class="tree" style="left: 250px;"><div class="tree-leaves"></div><div class="tree-trunk"></div></div>
+            <div class="school-building">
+                <div class="school-roof"></div>
+                <div class="school-sign">TSK Secondary School</div>
+                <div class="windows">
+                    <div class="win"></div><div class="win"></div><div class="win"></div>
+                    <div class="win"></div><div class="win"></div><div class="win"></div>
+                </div>
+            </div>
+        </div>
+        <div class="road"></div>
+        <div id="markers-container"></div>
+        <div id="car-container">
+            <svg viewBox="0 0 100 50" width="100" height="50">
+                <path d="M10,40 L90,40 L90,25 L70,10 L30,10 L10,25 Z" fill="#e74c3c" stroke="#c0392b" stroke-width="2"/>
+                <path d="M35,15 L65,15 L80,25 L35,25 Z" fill="#b3e5fc" />
+                <circle cx="25" cy="40" r="8" fill="#333" /><circle cx="25" cy="40" r="3" fill="#999" />
+                <circle cx="75" cy="40" r="8" fill="#333" /><circle cx="75" cy="40" r="3" fill="#999" />
+                <path d="M90,30 L95,30 L95,36 L90,36 Z" fill="#f1c40f" />
+            </svg>
+        </div>
+    </div>
 
-        function initLevel() {
-            const level = levels[currentLevelIdx];
-            document.getElementById('level-display').innerText = `Level ${currentLevelIdx + 1}: ${level.name}`;
-            document.getElementById('blueprint-text').innerText = `BLUEPRINT: ${level.desc}`;
-            document.getElementById('feedback-msg').innerText = "";
-            document.getElementById('next-btn').style.display = "none";
-            document.getElementById('check-btn').style.display = "block";
+    <div class="choices-grid" id="choices-area">
+        <div class="choice-card" id="card0" onclick="selectAnswer(0)">
+            <div class="canvas-area"><canvas id="canvas0"></canvas><div class="overlay-icon" id="icon0"></div></div>
+            <div class="card-footer" id="label0">A</div>
+        </div>
+        <div class="choice-card" id="card1" onclick="selectAnswer(1)">
+            <div class="canvas-area"><canvas id="canvas1"></canvas><div class="overlay-icon" id="icon1"></div></div>
+            <div class="card-footer" id="label1">B</div>
+        </div>
+        <div class="choice-card" id="card2" onclick="selectAnswer(2)">
+            <div class="canvas-area"><canvas id="canvas2"></canvas><div class="overlay-icon" id="icon2"></div></div>
+            <div class="card-footer" id="label2">C</div>
+        </div>
+        <div class="choice-card" id="card3" onclick="selectAnswer(3)">
+            <div class="canvas-area"><canvas id="canvas3"></canvas><div class="overlay-icon" id="icon3"></div></div>
+            <div class="card-footer" id="label3">D</div>
+        </div>
+    </div>
+
+<script>
+    // --- 1. VISUAL PRIMITIVES ---
+    const SHAPES = {
+        FLAT_POS: 1,      
+        FLAT_NEG: 2,      
+        FLAT_ZERO: 3,     
+        
+        LINE_UP: 4,         // Generic / 
+        LINE_DOWN: 5,       // Generic \ 
+        
+        LINE_UP_TO_ZERO: 6, // / ending at 0
+        LINE_DOWN_TO_ZERO: 7, // \ ending at 0
+        
+        CURVE_UP: 10,       // U
+        CURVE_DOWN: 11,     // n
+        
+        CURVE_UP_FLAT: 12,  // U flattening
+        CURVE_DOWN_FLAT: 13 // n flattening
+    };
+
+    // --- 2. CONFIG ---
+    const SCALE = 35; 
+    const CENTER_X = 400; 
+    const FPS = 60;
+    
+    // --- TRUTH TABLE ---
+    const SCENARIOS = [
+        {   // 0: Moves Right (Const V)
+            motion: { u: 3, a: 0, s0: -9, t: 4 },
+            correct: { 's-t': SHAPES.LINE_UP, 'v-t': SHAPES.FLAT_POS, 'a-t': SHAPES.FLAT_ZERO }
+        },
+        {   // 1: Moves Right (Const Accel)
+            motion: { u: 0, a: 1.5, s0: -9, t: 4 }, 
+            correct: { 's-t': SHAPES.CURVE_UP, 'v-t': SHAPES.LINE_UP, 'a-t': SHAPES.FLAT_POS }
+        },
+        {   // 2: Moves Right (Const Decel -> Stop)
+            motion: { u: 8, a: -2, s0: -9, t: 4 }, 
+            correct: { 's-t': SHAPES.CURVE_DOWN_FLAT, 'v-t': SHAPES.LINE_DOWN_TO_ZERO, 'a-t': SHAPES.FLAT_NEG }
+        },
+        {   // 3: Moves Left (Const V)
+            motion: { u: -3, a: 0, s0: 9, t: 4 },
+            correct: { 's-t': SHAPES.LINE_DOWN, 'v-t': SHAPES.FLAT_NEG, 'a-t': SHAPES.FLAT_ZERO }
+        },
+        {   // 4: Moves Left (Const Accel)
+            motion: { u: 0, a: -1.5, s0: 9, t: 4 },
+            correct: { 's-t': SHAPES.CURVE_DOWN, 'v-t': SHAPES.LINE_DOWN, 'a-t': SHAPES.FLAT_NEG }
+        },
+        {   // 5: Moves Left (Const Decel -> Stop)
+            motion: { u: -8, a: 2, s0: 9, t: 4 }, 
+            correct: { 's-t': SHAPES.CURVE_UP_FLAT, 'v-t': SHAPES.LINE_UP_TO_ZERO, 'a-t': SHAPES.FLAT_POS }
+        }
+    ];
+
+    let state = {
+        mode: 'mix',
+        currentScenario: null,
+        animating: false,
+        answered: false,
+        correctIdx: -1,
+        time: 0,
+        options: [] 
+    };
+
+    // --- 3. DOM ---
+    const carEl = document.getElementById('car-container');
+    const instructionEl = document.getElementById('instruction');
+    const markersEl = document.getElementById('markers-container');
+    const gridEl = document.getElementById('choices-area');
+
+    function initMarkers() {
+        markersEl.innerHTML = '';
+        for(let m = -10; m <= 10; m+=5) {
+            let mk = document.createElement('div');
+            mk.className = 'marker';
+            let leftPos = CENTER_X + (m * SCALE);
+            mk.style.left = leftPos + 'px';
+            mk.innerText = m + 'm';
+            markersEl.appendChild(mk);
+        }
+    }
+    initMarkers();
+
+    window.setMode = function(m, btn) {
+        state.mode = m;
+        document.querySelectorAll('.panel .btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        initScenario();
+    };
+
+    // --- 4. GAME LOOP ---
+    window.initScenario = function() {
+        state.animating = false;
+        state.answered = false;
+        state.time = 0;
+        state.options = []; 
+        resetCardsUI();
+
+        let rnd = Math.floor(Math.random() * 6);
+        state.currentScenario = SCENARIOS[rnd];
+        
+        generateOptionsData();
+        drawOptionsToCanvas();
+
+        if (state.mode === 'mix') {
+            instructionEl.innerText = "Which of the following graphs best describes the motion?";
+        } else {
+            instructionEl.innerText = `Select the correct ${state.mode.toUpperCase()} graph.`;
+        }
+        instructionEl.style.color = "var(--primary)";
+
+        state.animating = true;
+        requestAnimationFrame(animLoop);
+    };
+
+    window.replayMotion = function() {
+        if(state.answered) return;
+        state.time = 0;
+        state.animating = true;
+        requestAnimationFrame(animLoop);
+    };
+
+    function animLoop() {
+        if(!state.animating) return;
+        let dt = 1/FPS;
+        state.time += dt;
+
+        let m = state.currentScenario.motion;
+        let t = state.time;
+        
+        if(t >= m.t) {
+            t = m.t;
+            state.animating = false;
+            instructionEl.innerText = "Select the correct graph.";
+        }
+
+        let v = m.u + (m.a * t);
+        if (t >= m.t && m.a !== 0 && Math.abs(m.u + m.a*m.t) < 0.1) v = 0;
+        let s = m.s0 + (m.u * t) + (0.5 * m.a * t * t);
+
+        let px = CENTER_X + (s * SCALE) - 50; 
+        carEl.style.left = px + 'px';
+
+        let dir = v;
+        if (Math.abs(v) < 0.01) dir = m.u; 
+        if (dir > 0) carEl.style.transform = "scaleX(1)";
+        else carEl.style.transform = "scaleX(-1)";
+
+        if(state.animating) requestAnimationFrame(animLoop);
+    }
+
+    // --- 5. GENERATOR (RESTRICTED A-T) ---
+
+    function generateOptionsData() {
+        let options = [];
+        let correctType, correctShape;
+
+        // A-T SPECIAL MODE
+        if (state.mode === 'a-t') {
+            gridEl.classList.add('three-col');
+            document.getElementById('card3').classList.add('hidden'); 
             
-            // Setup Slots
-            const zone = document.getElementById('drop-zone');
-            zone.innerHTML = "";
-            level.blueprint.forEach(type => {
-                const slot = document.createElement('div');
-                slot.className = type === 'punctuation' ? 'slot punctuation-slot' : 'slot';
-                slot.setAttribute('data-expect', type);
-                slot.innerText = type.toUpperCase();
-                
-                // Drop Events
-                slot.addEventListener('dragover', e => e.preventDefault());
-                slot.addEventListener('drop', handleDrop);
-                
-                zone.appendChild(slot);
-            });
-
-            // Setup Blocks
-            const pool = document.getElementById('pool');
-            pool.innerHTML = "";
+            correctType = 'a-t';
+            correctShape = state.currentScenario.correct['a-t'];
             
-            // Shuffle blocks
-            const shuffled = level.blocks.sort(() => Math.random() - 0.5);
-
-            shuffled.forEach(blockData => {
-                const block = document.createElement('div');
-                block.className = `word-block type-${blockData.type}`;
-                block.setAttribute('draggable', 'true');
-                block.setAttribute('data-type', blockData.type);
-                block.innerText = blockData.text;
-
-                block.addEventListener('dragstart', handleDragStart);
-                block.addEventListener('dragend', handleDragEnd);
-
-                pool.appendChild(block);
+            let pool = [SHAPES.FLAT_ZERO, SHAPES.FLAT_POS, SHAPES.FLAT_NEG];
+            let allThree = pool.map(s => {
+                return { type: 'a-t', shape: s, isCorrect: (s === correctShape) };
             });
+            allThree.sort(() => Math.random() - 0.5);
+            state.options = allThree;
+            state.correctIdx = state.options.findIndex(o => o.isCorrect);
+            return;
         }
 
-        // Drag & Drop Logic
-        let draggedItem = null;
+        // MIX / OTHER MODES
+        gridEl.classList.remove('three-col');
+        document.getElementById('card3').classList.remove('hidden');
 
-        function handleDragStart(e) {
-            draggedItem = this;
-            setTimeout(() => this.classList.add('dragging'), 0);
+        // 1. Correct Answer
+        if (state.mode === 'mix') {
+            let types = ['s-t', 'v-t', 'a-t'];
+            correctType = types[Math.floor(Math.random() * 3)];
+        } else {
+            correctType = state.mode;
         }
+        correctShape = state.currentScenario.correct[correctType];
+        
+        options.push({ type: correctType, shape: correctShape, isCorrect: true });
 
-        function handleDragEnd() {
-            this.classList.remove('dragging');
-            draggedItem = null;
-        }
+        // 2. Distractors
+        let availableTypes = (state.mode === 'mix') ? ['s-t', 'v-t', 'a-t'] : [state.mode];
+        let allShapeValues = Object.values(SHAPES);
+        // POOL FOR A-T Graphs ONLY
+        const AT_RESTRICTED_POOL = [SHAPES.FLAT_POS, SHAPES.FLAT_NEG, SHAPES.FLAT_ZERO];
 
-        function handleDrop(e) {
-            e.preventDefault();
-            if (this.children.length === 0) { // Only allow one item per slot
-                this.innerHTML = ""; // Clear the text label
-                this.appendChild(draggedItem);
-                this.style.border = "2px solid #3b82f6";
-            }
-        }
+        let attempts = 0;
+        while(options.length < 4 && attempts < 2000) {
+            attempts++;
+            let dType = availableTypes[Math.floor(Math.random() * availableTypes.length)];
+            let dShape;
 
-        // Return block to pool if dropped outside
-        document.getElementById('pool').addEventListener('dragover', e => e.preventDefault());
-        document.getElementById('pool').addEventListener('drop', function(e) {
-            e.preventDefault();
-            if(draggedItem) {
-                this.appendChild(draggedItem);
-                // Reset slots visual
-                document.querySelectorAll('.slot').forEach(s => {
-                    if(s.children.length === 0) {
-                        s.innerText = s.getAttribute('data-expect').toUpperCase();
-                        s.style.border = "2px dashed #ccc";
-                    }
-                });
-            }
-        });
-
-
-        function checkAnswer() {
-            const level = levels[currentLevelIdx];
-            const slots = document.querySelectorAll('.slot');
-            let correct = true;
-
-            slots.forEach((slot, index) => {
-                if (slot.children.length === 0) {
-                    correct = false; // Empty slot
-                    slot.style.borderColor = "red";
-                } else {
-                    const block = slot.children[0];
-                    const blockType = block.getAttribute('data-type');
-                    const expectedType = slot.getAttribute('data-expect');
-
-                    if (blockType !== expectedType) {
-                        correct = false;
-                        slot.style.borderColor = "red";
-                    } else {
-                        slot.style.borderColor = "#10b981"; // Green border
-                    }
-                }
-            });
-
-            const msg = document.getElementById('feedback-msg');
-            if (correct) {
-                msg.innerText = "Correct! Structure matches the blueprint.";
-                msg.style.color = "#10b981";
-                document.getElementById('check-btn').style.display = "none";
-                
-                if(currentLevelIdx < levels.length - 1) {
-                    document.getElementById('next-btn').style.display = "block";
-                } else {
-                    msg.innerText = "Congratulations! You are a Master Sentence Architect.";
-                }
+            // --- STRICT CONSTRAINT APPLIED HERE ---
+            if (dType === 'a-t') {
+                // If it is an a-t graph, ONLY pick from flat lines
+                dShape = AT_RESTRICTED_POOL[Math.floor(Math.random() * AT_RESTRICTED_POOL.length)];
             } else {
-                msg.innerText = "Incorrect structure. Check the red boxes.";
-                msg.style.color = "#ef4444";
+                // Otherwise, pick any shape
+                dShape = allShapeValues[Math.floor(Math.random() * allShapeValues.length)];
             }
+            
+            // A. Factual Check
+            let trueShape = state.currentScenario.correct[dType];
+            if (dShape === trueShape) continue; 
+
+            // B. Uniqueness Check
+            let isDuplicate = options.some(o => o.type === dType && o.shape === dShape);
+            if (isDuplicate) continue; 
+
+            // Add valid distractor
+            options.push({ type: dType, shape: dShape, isCorrect: false });
         }
+        
+        // Shuffle
+        state.correctIdx = Math.floor(Math.random() * 4);
+        [options[0], options[state.correctIdx]] = [options[state.correctIdx], options[0]];
+        state.options = options;
+    }
 
-        function nextLevel() {
-            currentLevelIdx++;
-            initLevel();
+    function drawOptionsToCanvas() {
+        for(let i=0; i<4; i++) {
+             if (i >= state.options.length) break;
+             let opt = state.options[i];
+             drawShape(i, opt.shape, opt.type);
         }
+    }
 
-        // Start
-        initLevel();
+    function drawShape(id, shapeCode, typeLabel) {
+        let cvs = document.getElementById('canvas'+id);
+        let ctx = cvs.getContext('2d');
+        let rect = cvs.getBoundingClientRect();
+        cvs.width = rect.width * 2; cvs.height = rect.height * 2;
+        ctx.scale(2, 2);
+        let w = rect.width; let h = rect.height;
 
-    </script>
+        ctx.clearRect(0,0,w,h);
+        
+        ctx.strokeStyle = '#2c3e50'; ctx.lineWidth = 1.5;
+        let midY = h/2; 
+        
+        ctx.beginPath(); ctx.moveTo(30, 10); ctx.lineTo(30, h-10); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(30, midY); ctx.lineTo(w-10, midY); ctx.stroke();
+
+        ctx.fillStyle = '#e74c3c'; ctx.font = 'bold 14px Arial'; ctx.fillText(typeLabel, 5, 15); 
+        ctx.fillStyle = '#95a5a6'; ctx.font = 'bold 12px Arial'; ctx.fillText('t', w-15, midY + 15);
+
+        ctx.strokeStyle = '#2980b9'; ctx.lineWidth = 3; ctx.lineCap = 'round';
+        ctx.beginPath();
+
+        let graphW = w - 40;
+        let startX = 30;
+        let yPos = midY - 40; let yNeg = midY + 40; let yZero = midY;
+
+        switch(shapeCode) {
+            case SHAPES.FLAT_POS: ctx.moveTo(startX, yPos); ctx.lineTo(startX+graphW, yPos); break;
+            case SHAPES.FLAT_NEG: ctx.moveTo(startX, yNeg); ctx.lineTo(startX+graphW, yNeg); break;
+            case SHAPES.FLAT_ZERO: ctx.strokeStyle = '#e67e22'; ctx.moveTo(startX, yZero); ctx.lineTo(startX+graphW, yZero); break;
+            
+            case SHAPES.LINE_UP: ctx.moveTo(startX, yZero); ctx.lineTo(startX+graphW, yPos - 20); break;
+            case SHAPES.LINE_DOWN: ctx.moveTo(startX, yPos - 10); ctx.lineTo(startX+graphW, yNeg + 10); break;
+            
+            case SHAPES.LINE_UP_TO_ZERO: ctx.moveTo(startX, yNeg); ctx.lineTo(startX+graphW, yZero); break;
+            case SHAPES.LINE_DOWN_TO_ZERO: ctx.moveTo(startX, yPos); ctx.lineTo(startX+graphW, yZero); break;
+            
+            case SHAPES.CURVE_UP: ctx.moveTo(startX, yZero); ctx.quadraticCurveTo(startX+graphW/2, yZero, startX+graphW, yPos-40); break;
+            case SHAPES.CURVE_DOWN: ctx.moveTo(startX, yZero); ctx.quadraticCurveTo(startX+graphW/2, yZero, startX+graphW, yNeg+40); break;
+            
+            case SHAPES.CURVE_UP_FLAT: ctx.moveTo(startX, yZero); ctx.quadraticCurveTo(startX, yNeg+30, startX+graphW, yNeg+30); break;
+            case SHAPES.CURVE_DOWN_FLAT: ctx.moveTo(startX, yZero); ctx.quadraticCurveTo(startX, yPos-30, startX+graphW, yPos-30); break;
+        }
+        ctx.stroke();
+    }
+
+    function resetCardsUI() {
+        for(let i=0; i<4; i++) {
+            let c = document.getElementById('card'+i);
+            c.className = 'choice-card';
+            c.classList.remove('hidden'); 
+            
+            document.getElementById('icon'+i).innerText = "";
+            document.getElementById('icon'+i).style.opacity = "0";
+            document.getElementById('label'+i).innerText = String.fromCharCode(65+i);
+        }
+    }
+
+    window.selectAnswer = function(idx) {
+        if(state.answered || state.animating) return;
+        state.answered = true;
+
+        if(idx === state.correctIdx) {
+            document.getElementById('card'+idx).classList.add('correct');
+            document.getElementById('icon'+idx).innerText = "✓";
+            document.getElementById('icon'+idx).style.color = "var(--success)";
+            document.getElementById('icon'+idx).style.opacity = "1";
+            document.getElementById('label'+idx).innerText = "CORRECT";
+            instructionEl.innerText = "Correct!";
+            instructionEl.style.color = "var(--success)";
+        } else {
+            document.getElementById('card'+idx).classList.add('wrong');
+            document.getElementById('icon'+idx).innerText = "✗";
+            document.getElementById('icon'+idx).style.color = "var(--danger)";
+            document.getElementById('icon'+idx).style.opacity = "1";
+            document.getElementById('label'+idx).innerText = "WRONG";
+            
+            // Show Correct
+            document.getElementById('card'+state.correctIdx).classList.add('correct');
+            document.getElementById('icon'+state.correctIdx).innerText = "✓";
+            document.getElementById('icon'+state.correctIdx).style.color = "var(--success)";
+            document.getElementById('icon'+state.correctIdx).style.opacity = "1";
+            document.getElementById('label'+state.correctIdx).innerText = "CORRECT";
+
+            instructionEl.innerText = "Incorrect.";
+            instructionEl.style.color = "var(--danger)";
+        }
+    };
+    
+    window.onload = initScenario;
+
+</script>
 </body>
 </html>
